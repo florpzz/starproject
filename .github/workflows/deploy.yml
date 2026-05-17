@@ -9,11 +9,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environments:
+    environment:
       name: 'main'
     permissions: 
-      content: read
-      package: write
+      contents: read
+      packages: write
     outputs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
     steps:
