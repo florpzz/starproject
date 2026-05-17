@@ -9,12 +9,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    enviroments:
+    environments:
       name: 'main'
     permissions: 
       content: read
       package: write
-    output:
+    outputs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
