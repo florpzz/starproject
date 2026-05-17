@@ -3,5 +3,5 @@ services:
     build: .
     container_name: starproject-api
     ports:
-      - "8000:8000"
+      - "8020:8000"
     restart: unless-stopped
