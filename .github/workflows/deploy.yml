@@ -53,41 +53,31 @@ jobs:
       name: 'main'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          OWNER: ${{ github.repository_owner }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          APP_CONTAINER: starproject-api
+          APP_HOST_PORT: "8020"
         with:
           host: ${{ vars.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: 22
+          envs: OWNER,GHCR_TOKEN,IMAGE_TAG,APP_CONTAINER,APP_HOST_PORT
           script: |
             set -e
-            PROJECT_DIR="/opt/starproject"
-            REPO_URL="https://github.com/${GITHUB_REPOSITORY}.git"
+            OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+            IMAGE_REPO="ghcr.io/$OWNER_LC/conurban-dj-api"
 
-            if [ ! -d "$PROJECT_DIR" ]; then
-              sudo mkdir -p "$PROJECT_DIR"
-              sudo chown "$USER:$USER" "$PROJECT_DIR"
-            fi
-
-            if [ ! -d "$PROJECT_DIR/.git" ]; then
-              git clone "$REPO_URL" "$PROJECT_DIR"
-            fi
-
-            cd "$PROJECT_DIR"
-            git pull origin main
-            if ! command -v poetry >/dev/null 2>&1; then
-              curl -sSL https://install.python-poetry.org | python3 -
-              export PATH="$HOME/.local/bin:$PATH"
-            fi
-            poetry install --no-interaction --no-root
-            sudo systemctl restart starproject
-            sudo systemctl status starproject --no-pager
+            sudo -n systemctl start docker || true
+            echo "$GHCR_TOKEN" | sudo -n docker login ghcr.io -u "$OWNER" --password-stdin
+            sudo -n docker pull "$IMAGE_REPO:$IMAGE_TAG"
+            sudo -n docker stop "$APP_CONTAINER" || true
+            sudo -n docker rm "$APP_CONTAINER" || true
+            sudo -n docker run -d --name "$APP_CONTAINER" \
+              -p "$APP_HOST_PORT:8000" \
+              --restart unless-stopped \
+              "$IMAGE_REPO:$IMAGE_TAG"
