@@ -64,13 +64,25 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ vars.SSH_HOST }}
+          host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
             set -e
-            cd /opt/starproject
+            PROJECT_DIR="/opt/starproject"
+            REPO_URL="https://github.com/${GITHUB_REPOSITORY}.git"
+
+            if [ ! -d "$PROJECT_DIR" ]; then
+              sudo mkdir -p "$PROJECT_DIR"
+              sudo chown "$USER:$USER" "$PROJECT_DIR"
+            fi
+
+            if [ ! -d "$PROJECT_DIR/.git" ]; then
+              git clone "$REPO_URL" "$PROJECT_DIR"
+            fi
+
+            cd "$PROJECT_DIR"
             git pull origin main
             if ! command -v poetry >/dev/null 2>&1; then
               curl -sSL https://install.python-poetry.org | python3 -
