@@ -1,0 +1,40 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff-format
+        entry: poetry run ruff format
+        language: system
+        pass_filenames: true
+        files: ^app/.*\.py$
+
+      - id: ruff
+        name: ruff
+        entry: poetry run ruff check --fix
+        language: system
+        pass_filenames: true
+        files: ^app/.*\.py$
+
+      - id: pytest
+        name: pytest
+        entry: poetry run pytest
+        language: system
+        pass_filenames: false
+        stages: [manual]
+        files: ^app/.*\.py$
+
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy app
+        language: system
+        pass_filenames: false
+        stages: [manual]
+        files: ^app/.*\.py$
+
+      - id: bandit
+        name: bandit
+        entry: poetry run python -m bandit -r app
+        language: system
+        pass_filenames: false
+        stages: [manual]
+        files: ^app/.*\.py$
